@@ -1,841 +1,363 @@
 
-import base64
 import streamlit as st
-from openai import (
-    OpenAI,
-    AuthenticationError,
-    RateLimitError,
-    APIConnectionError,
-    BadRequestError
-)
+import base64
+from openai import OpenAI
 
-
-# =========================================================
-# CONFIGURACIÓN GENERAL
-# =========================================================
+# --------------------------------------------------
+# CONFIGURACIÓN
+# --------------------------------------------------
 
 st.set_page_config(
-    page_title="VisioLab | Inteligencia visual",
-    page_icon="🔷",
+    page_title="VisioLab",
+    page_icon="🔍",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
-
-# =========================================================
-# IDENTIDAD VISUAL - VISIOLAB
-# =========================================================
+# --------------------------------------------------
+# ESTILOS DE LA INTERFAZ
+# --------------------------------------------------
 
 st.markdown("""
 <style>
 
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
-
-html, body, [class*="css"] {
-    font-family: 'Manrope', sans-serif;
-}
-
+/* Fondo general */
 .stApp {
     background: linear-gradient(
         135deg,
         #EAF8FF 0%,
-        #D9F0FF 30%,
-        #E9ECFF 65%,
-        #F5F7FF 100%
+        #D9F0FF 45%,
+        #EEF2FF 100%
     );
-    background-attachment: fixed;
 }
 
-[data-testid="stAppViewContainer"] {
-    background: transparent;
+/* Ocultar menú superior */
+#MainMenu {
+    visibility: hidden;
 }
 
-[data-testid="stHeader"] {
-    background: transparent;
+footer {
+    visibility: hidden;
 }
 
+/* Contenedor principal */
 .block-container {
-    max-width: 1250px;
+    max-width: 1050px;
     padding-top: 2rem;
     padding-bottom: 3rem;
 }
 
-/* -----------------------------------------------------
-   BARRA LATERAL
------------------------------------------------------ */
-
-section[data-testid="stSidebar"] {
-    background: linear-gradient(
-        165deg,
-        #101B42 0%,
-        #123D78 52%,
-        #087EAD 100%
-    );
-}
-
-section[data-testid="stSidebar"] * {
-    color: #FFFFFF;
-}
-
-section[data-testid="stSidebar"] input,
-section[data-testid="stSidebar"] textarea {
-    background-color: #FFFFFF !important;
-    color: #17233F !important;
-    border: 1px solid #D5E4F5 !important;
-    border-radius: 10px !important;
-}
-
-section[data-testid="stSidebar"] input::placeholder,
-section[data-testid="stSidebar"] textarea::placeholder {
-    color: #78869B !important;
-}
-
-/* Ocultar el botón de mostrar contraseña */
-
-section[data-testid="stSidebar"]
-div[data-testid="stTextInput"]:has(input[type="password"]) button {
-    display: none !important;
-}
-
-/* Selectores */
-
-section[data-testid="stSidebar"] div[data-baseweb="select"] > div {
-    background: #FFFFFF !important;
-    border-radius: 9px !important;
-}
-
-section[data-testid="stSidebar"] div[data-baseweb="select"] span {
-    color: #17233F !important;
-}
-
-/* Scrollbar */
-
-section[data-testid="stSidebar"] [data-testid="stSidebarContent"] {
-    scrollbar-width: thin;
-    scrollbar-color: #66D9F5 #101B42;
-}
-
-section[data-testid="stSidebar"] [data-testid="stSidebarContent"]::-webkit-scrollbar {
-    width: 8px;
-}
-
-section[data-testid="stSidebar"] [data-testid="stSidebarContent"]::-webkit-scrollbar-track {
-    background: #101B42;
-}
-
-section[data-testid="stSidebar"] [data-testid="stSidebarContent"]::-webkit-scrollbar-thumb {
-    background: #66D9F5;
-    border-radius: 10px;
-}
-
-/* -----------------------------------------------------
-   BOTONES DE LA BARRA LATERAL
------------------------------------------------------ */
-
-section[data-testid="stSidebar"]
-button[data-testid="stSidebarCollapseButton"],
-button[data-testid="stSidebarExpandButton"] {
-    display: flex !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    background: #BCEFFF !important;
-    border: 1px solid #BCEFFF !important;
-    border-radius: 9px !important;
-    align-items: center !important;
-    justify-content: center !important;
-}
-
-section[data-testid="stSidebar"]
-button[data-testid="stSidebarCollapseButton"] svg,
-button[data-testid="stSidebarExpandButton"] svg {
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    color: #123D78 !important;
-    stroke: #123D78 !important;
-}
-
-section[data-testid="stSidebar"]
-button[data-testid="stSidebarCollapseButton"] span,
-button[data-testid="stSidebarExpandButton"] span {
-    visibility: visible !important;
-    opacity: 1 !important;
-}
-
-/* -----------------------------------------------------
-   ENCABEZADO
------------------------------------------------------ */
-
+/* Encabezado */
 .hero {
-    background: linear-gradient(
-        120deg,
-        #10265A 0%,
-        #1556A8 43%,
-        #078FCE 75%,
-        #55D6EB 100%
-    );
-    padding: 42px 44px;
-    border-radius: 24px;
-    color: #FFFFFF;
-    box-shadow: 0 15px 40px rgba(22, 91, 160, 0.18);
-    margin-bottom: 30px;
-    position: relative;
-    overflow: hidden;
+    text-align: center;
+    padding: 20px 10px 25px 10px;
 }
 
-.hero::after {
-    content: "";
-    position: absolute;
-    width: 260px;
-    height: 260px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.08);
-    right: -70px;
-    top: -100px;
-}
-
-.hero-label {
-    font-size: 11px;
+.hero-title {
+    color: #1556A8;
+    font-size: 34px;
     font-weight: 800;
-    letter-spacing: 3px;
-    color: #A9F0FF;
-    margin-bottom: 12px;
+    letter-spacing: 1px;
+    margin-bottom: 7px;
 }
 
-.hero h1 {
-    font-size: 48px;
-    font-weight: 800;
-    line-height: 1.15;
-    color: #FFFFFF;
-    margin: 0 0 14px 0;
-}
-
-.hero p {
-    color: #EAF8FF;
-    font-size: 16px;
-    line-height: 1.7;
-    max-width: 720px;
-}
-
-.hero-tag {
-    display: inline-block;
-    padding: 9px 16px;
-    margin-top: 12px;
-    border-radius: 30px;
-    border: 1px solid rgba(255,255,255,0.35);
-    background: rgba(255,255,255,0.12);
-    color: #FFFFFF;
-    font-size: 10px;
+.hero-subtitle {
+    color: #64748B;
+    font-size: 13px;
+    font-weight: 700;
     letter-spacing: 1.5px;
-    font-weight: 800;
 }
 
-/* -----------------------------------------------------
-   TEXTOS PRINCIPALES
------------------------------------------------------ */
-
-.main h1,
-.main h2,
-.main h3,
-.main p,
-.main label {
-    color: #142C55;
-}
-
-.main [data-testid="stMarkdownContainer"] p {
-    color: #425A7D;
-}
-
-/* -----------------------------------------------------
-   BOTONES PRINCIPALES
------------------------------------------------------ */
-
-.stButton > button {
-    background: linear-gradient(
-        110deg,
-        #1556A8,
-        #078FCE
-    ) !important;
-    color: #FFFFFF !important;
-    border: none !important;
-    border-radius: 11px !important;
-    padding: 0.7rem 1.3rem !important;
-    font-weight: 800 !important;
-    transition: all 0.2s ease;
-    box-shadow: 0 5px 14px rgba(21, 86, 168, 0.15);
-}
-
-.stButton > button:hover {
-    background: linear-gradient(
-        110deg,
-        #10488F,
-        #0579B5
-    ) !important;
-    transform: translateY(-2px);
-    box-shadow: 0 8px 18px rgba(21, 86, 168, 0.22);
-}
-
-/* -----------------------------------------------------
-   CARGADOR DE IMÁGENES
------------------------------------------------------ */
-
-[data-testid="stFileUploader"] {
-    background: rgba(255,255,255,0.85);
-    border: 2px dashed #80BCEB;
-    border-radius: 16px;
-    padding: 1rem;
-}
-
-[data-testid="stFileUploader"] * {
-    color: #183B69 !important;
-}
-
-/* -----------------------------------------------------
-   IMÁGENES
------------------------------------------------------ */
-
-[data-testid="stImage"] {
-    border-radius: 16px;
-    overflow: hidden;
-}
-
-/* -----------------------------------------------------
-   CONTENEDORES Y TARJETAS
------------------------------------------------------ */
-
-[data-testid="stVerticalBlockBorderWrapper"] {
-    background: rgba(255,255,255,0.85);
-    border: 1px solid #D8E8F8;
-    border-radius: 16px;
-}
-
-/* -----------------------------------------------------
-   EXPANDERS
------------------------------------------------------ */
-
-[data-testid="stExpander"] {
+/* Tarjetas */
+.panel {
     background: rgba(255,255,255,0.88);
-    border: 1px solid #D8E8F8;
-    border-radius: 12px;
+    border: 1px solid #DCEBFA;
+    border-radius: 20px;
+    padding: 25px;
+    box-shadow: 0 8px 25px rgba(21,86,168,0.07);
+    margin-bottom: 18px;
 }
 
-[data-testid="stExpander"] summary {
-    color: #173D70 !important;
-}
-
-/* -----------------------------------------------------
-   TEXT AREA
------------------------------------------------------ */
-
-.stTextArea textarea {
-    background: #FFFFFF !important;
-    color: #17233F !important;
-    border: 1px solid #BBD3EC !important;
-    border-radius: 10px !important;
-}
-
-.stTextArea textarea::placeholder {
-    color: #8291A7 !important;
-}
-
-/* -----------------------------------------------------
-   MÉTRICAS
------------------------------------------------------ */
-
-[data-testid="stMetric"] {
-    background: rgba(255,255,255,0.88);
-    border: 1px solid #D8E8F8;
-    border-radius: 14px;
-    padding: 15px;
-}
-
-[data-testid="stMetricLabel"] {
-    color: #536B8B !important;
-}
-
-[data-testid="stMetricValue"] {
+/* Títulos */
+h2, h3 {
     color: #1556A8 !important;
 }
 
-/* -----------------------------------------------------
-   PIE DE PÁGINA
------------------------------------------------------ */
+/* Botones */
+.stButton > button {
+    background: linear-gradient(90deg, #1556A8, #078FCE);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 20px;
+    font-weight: 700;
+    min-height: 48px;
+    transition: 0.2s ease;
+}
 
-.footer {
+.stButton > button:hover {
+    background: linear-gradient(90deg, #0D4389, #087DB5);
+    color: white;
+    border: none;
+}
+
+/* Campo de texto */
+.stTextArea textarea,
+.stTextInput input {
+    border-radius: 12px;
+    border: 1px solid #C9DDF2;
+}
+
+/* Cargador */
+[data-testid="stFileUploader"] {
+    background: #F5FAFF;
+    border: 1px dashed #7BB7E8;
+    border-radius: 15px;
+    padding: 15px;
+}
+
+/* Resultado */
+.resultado {
+    background: white;
+    border-left: 5px solid #078FCE;
+    border-radius: 14px;
+    padding: 22px;
+    color: #263B53;
+    line-height: 1.7;
+    box-shadow: 0 6px 20px rgba(21,86,168,0.07);
+}
+
+/* Pie de página */
+.pie {
     text-align: center;
-    color: #637D9F;
-    font-size: 11px;
-    padding: 20px;
-    letter-spacing: 1px;
+    color: #8296AA;
+    font-size: 12px;
+    padding: 30px 0 10px 0;
 }
 
 </style>
 """, unsafe_allow_html=True)
 
-
-# =========================================================
-# ENCABEZADO PRINCIPAL
-# =========================================================
+# --------------------------------------------------
+# ENCABEZADO
+# --------------------------------------------------
 
 st.markdown("""
 <div class="hero">
-
-    <div class="hero-label">
-        VISUAL INTELLIGENCE STUDIO
+    <div class="hero-title">VisioLab.</div>
+    <div class="hero-subtitle">
+        SUBE · PREGUNTA · DESCUBRE
     </div>
-
-    <h1>VisioLab.</h1>
-
-    <p>
-        Explora el poder de la inteligencia artificial visual.
-        Sube una imagen, descubre sus detalles y obtén respuestas
-        inteligentes sobre todo lo que contiene.
-    </p>
-
-    <div class="hero-tag">
-        OBSERVAR · COMPRENDER · DESCUBRIR
-    </div>
-
 </div>
 """, unsafe_allow_html=True)
 
+# --------------------------------------------------
+# API KEY
+# --------------------------------------------------
 
-# =========================================================
-# BARRA LATERAL
-# =========================================================
+api_key = ""
+
+try:
+    api_key = st.secrets.get("OPENAI_API_KEY", "")
+except Exception:
+    pass
 
 with st.sidebar:
-
-    st.markdown("## 🔷 VisioLab")
-
-    st.markdown(
-        "### Configuración"
-    )
-
-    st.markdown(
-        "Conecta tu cuenta para comenzar a interpretar imágenes."
-    )
-
-    st.markdown("---")
-
-    st.markdown("### 🔐 Conexión API")
-
+    st.markdown("### Configuración")
     api_key = st.text_input(
         "Clave API de OpenAI",
+        value=api_key,
         type="password",
-        placeholder="Introduce tu clave sk-...",
-        help="La clave se utiliza para realizar el análisis visual."
-    ).strip()
-
-    if api_key:
-        st.success("✓ Clave introducida")
-    else:
-        st.warning("Introduce tu clave API para comenzar.")
-
-    st.markdown("---")
-
-    st.markdown("### 🧠 Modelo de inteligencia")
-
-    st.markdown(
-        """
-        <div style="
-            background:rgba(255,255,255,0.12);
-            border:1px solid rgba(255,255,255,0.2);
-            padding:13px;
-            border-radius:10px;
-            color:white;
-            font-size:13px;
-        ">
-            <b>GPT-4o</b><br>
-            <span style="color:#C6EFFF;">
-            Modelo multimodal para comprensión visual.
-            </span>
-        </div>
-        """,
-        unsafe_allow_html=True
+        help="Tu clave se utiliza para conectar con el modelo de inteligencia artificial."
     )
 
-    st.markdown("---")
+    st.caption("La clave se utiliza para realizar el análisis de imágenes.")
 
-    st.caption("VISIOLAB · VISUAL INTELLIGENCE STUDIO")
+# --------------------------------------------------
+# CARGA DE IMAGEN
+# --------------------------------------------------
 
+st.markdown("""
+<div style="text-align:center; margin-bottom:18px;">
+    <h3 style="margin-bottom:5px;">Sube tu imagen</h3>
+    <p style="color:#64748B; font-size:14px;">
+        Carga una fotografía y pregunta lo que quieras saber sobre ella.
+    </p>
+</div>
+""", unsafe_allow_html=True)
 
-# =========================================================
-# ESTADO DE LA APLICACIÓN
-# =========================================================
-
-if "analysis_result" not in st.session_state:
-    st.session_state.analysis_result = None
-
-if "last_image_hash" not in st.session_state:
-    st.session_state.last_image_hash = None
-
-if "last_prompt" not in st.session_state:
-    st.session_state.last_prompt = None
-
-
-# =========================================================
-# ÁREA DE CARGA
-# =========================================================
-
-st.markdown("## 📷 Explora una imagen")
-
-st.markdown(
-    "Carga una imagen para que la inteligencia artificial "
-    "pueda analizarla y responder tus preguntas."
-)
-
-uploaded_file = st.file_uploader(
-    "Selecciona una imagen desde tu dispositivo",
+archivo = st.file_uploader(
+    "Selecciona una fotografía",
     type=["jpg", "jpeg", "png"],
     help="Formatos permitidos: JPG, JPEG y PNG."
 )
 
+# --------------------------------------------------
+# VISTA PREVIA Y PREGUNTA
+# --------------------------------------------------
 
-# =========================================================
-# VISTA PREVIA DE LA IMAGEN
-# =========================================================
+if archivo is not None:
 
-if uploaded_file:
+    st.markdown('<div class="panel">', unsafe_allow_html=True)
 
-    image_bytes = uploaded_file.getvalue()
+    st.markdown("### Vista previa")
 
-    if len(image_bytes) > 20 * 1024 * 1024:
-        st.error(
-            "La imagen supera el límite de 20 MB. "
-            "Carga una imagen más pequeña."
-        )
-        uploaded_file = None
+    st.image(
+        archivo,
+        caption="Imagen cargada",
+        use_container_width=True
+    )
 
-    else:
+    st.markdown("</div>", unsafe_allow_html=True)
 
-        st.session_state.analysis_result = None
+    st.markdown('<div class="panel">', unsafe_allow_html=True)
 
-        with st.expander(
-            "🖼️ Vista previa de la imagen",
-            expanded=True
-        ):
+    st.markdown("### ¿Qué quieres saber?")
 
-            col1, col2 = st.columns(
-                [1.5, 1],
-                gap="large"
+    pregunta = st.text_area(
+        "Escribe tu pregunta sobre la imagen",
+        placeholder="Ejemplo: ¿Qué objetos aparecen en esta fotografía?",
+        height=110,
+        label_visibility="collapsed"
+    )
+
+    analizar = st.button(
+        "Analizar imagen",
+        use_container_width=True
+    )
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    # --------------------------------------------------
+    # ANÁLISIS CON INTELIGENCIA ARTIFICIAL
+    # --------------------------------------------------
+
+    if analizar:
+
+        if not api_key:
+            st.error(
+                "Debes ingresar tu clave API de OpenAI en el menú de configuración."
             )
 
-            with col1:
+        else:
+            try:
+                # Convertir imagen a Base64
+                imagen_bytes = archivo.getvalue()
+                imagen_base64 = base64.b64encode(
+                    imagen_bytes
+                ).decode("utf-8")
 
-                st.image(
-                    image_bytes,
-                    caption=uploaded_file.name,
-                    use_container_width=True
+                tipo_imagen = archivo.type
+
+                # Si no se escribe una pregunta, usar una general
+                if not pregunta.strip():
+                    pregunta_final = (
+                        "Describe detalladamente esta imagen. "
+                        "Identifica los elementos visibles y explica "
+                        "qué información se puede obtener de ella."
+                    )
+                else:
+                    pregunta_final = pregunta.strip()
+
+                # Crear cliente de OpenAI
+                cliente = OpenAI(api_key=api_key)
+
+                st.markdown("### Resultado del análisis")
+
+                with st.spinner("Analizando tu imagen..."):
+
+                    respuesta = cliente.chat.completions.create(
+                        model="gpt-4o",
+                        messages=[
+                            {
+                                "role": "system",
+                                "content": (
+                                    "Eres un asistente experto en análisis visual. "
+                                    "Analiza las imágenes cuidadosamente y responde "
+                                    "en español, con claridad, precisión y de forma "
+                                    "útil. Describe únicamente lo que puedas observar "
+                                    "y aclara cuando algo no pueda determinarse."
+                                )
+                            },
+                            {
+                                "role": "user",
+                                "content": [
+                                    {
+                                        "type": "text",
+                                        "text": pregunta_final
+                                    },
+                                    {
+                                        "type": "image_url",
+                                        "image_url": {
+                                            "url": (
+                                                f"data:{tipo_imagen};base64,"
+                                                f"{imagen_base64}"
+                                            ),
+                                            "detail": "high"
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
+                        max_tokens=1600,
+                        temperature=0.4
+                    )
+
+                texto_respuesta = (
+                    respuesta.choices[0].message.content
                 )
-
-            with col2:
-
-                st.markdown("### Información del archivo")
 
                 st.markdown(
-                    f"**Nombre:** {uploaded_file.name}"
+                    f'<div class="resultado">{texto_respuesta}</div>',
+                    unsafe_allow_html=True
                 )
 
-                st.markdown(
-                    f"**Formato:** {uploaded_file.type}"
-                )
+            except Exception as error:
 
-                st.markdown(
-                    f"**Tamaño:** {len(image_bytes) / 1024:.1f} KB"
-                )
+                mensaje = str(error)
 
-                st.success(
-                    "Imagen lista para analizar."
-                )
+                if "401" in mensaje or "invalid_api_key" in mensaje:
+                    st.error(
+                        "La clave API no es válida. "
+                        "Verifica tu clave de OpenAI."
+                    )
 
+                elif "429" in mensaje:
+                    st.error(
+                        "Se alcanzó un límite de uso o cuota de la API. "
+                        "Revisa tu cuenta de OpenAI."
+                    )
 
-# =========================================================
-# OPCIONES DE ANÁLISIS
-# =========================================================
+                elif "Connection" in mensaje:
+                    st.error(
+                        "No fue posible conectar con OpenAI. "
+                        "Verifica tu conexión a internet."
+                    )
 
-st.markdown("---")
-
-st.markdown("## 🔍 ¿Qué quieres descubrir?")
-
-analysis_mode = st.radio(
-    "Selecciona el tipo de análisis:",
-    [
-        "Descripción general",
-        "Pregunta específica"
-    ],
-    horizontal=True
-)
-
-additional_details = ""
-
-if analysis_mode == "Pregunta específica":
-
-    additional_details = st.text_area(
-        "Escribe tu pregunta sobre la imagen",
-        placeholder=(
-            "Ejemplo: ¿Qué elementos aparecen en la imagen? "
-            "¿Qué información contiene el gráfico? "
-            "¿Qué diferencias observas entre los objetos?"
-        ),
-        height=110
-    )
+                else:
+                    st.error(
+                        "Ocurrió un error al analizar la imagen. "
+                        "Inténtalo nuevamente."
+                    )
 
 else:
 
-    st.info(
-        "La IA realizará una descripción detallada de los "
-        "elementos, objetos, personas, colores, texto y "
-        "contexto visual que pueda reconocer."
-    )
-
-
-# =========================================================
-# CONSTRUCCIÓN DEL PROMPT
-# =========================================================
-
-def build_prompt(mode, details):
-
-    if mode == "Descripción general":
-
-        return """
-Analiza cuidadosamente la imagen proporcionada.
-
-Escribe una descripción completa y organizada en español.
-
-Incluye, cuando corresponda:
-
-1. Descripción general de la imagen.
-2. Elementos, objetos o personas visibles.
-3. Colores, formas, composición y detalles importantes.
-4. Texto que aparezca en la imagen, si es legible.
-5. Contexto o situación que representa.
-6. Información relevante que pueda interpretarse visualmente.
-
-Distingue claramente entre lo que se observa directamente
-y lo que solo puede inferirse.
-
-No inventes información ni afirmes detalles que no sean
-visibles con suficiente claridad.
-
-Utiliza un lenguaje claro, preciso y profesional.
-"""
-
-    return f"""
-Analiza cuidadosamente la imagen y responde en español
-la siguiente pregunta del usuario:
-
-{details}
-
-Utiliza únicamente la información que pueda observarse
-en la imagen.
-
-Explica tu respuesta de forma clara, detallada y organizada.
-
-Si algún elemento no se puede identificar con certeza,
-indícalo expresamente.
-
-No inventes información.
-"""
-
-
-# =========================================================
-# ANÁLISIS DE IMAGEN
-# =========================================================
-
-st.markdown("---")
-
-st.markdown("## ✨ Interpretación inteligente")
-
-st.markdown(
-    "Cuando estés listo, inicia el análisis visual."
-)
-
-analyze_button = st.button(
-    "🔷 Analizar imagen",
-    type="primary",
-    use_container_width=True,
-    disabled=(
-        uploaded_file is None
-        or not api_key
-        or (
-            analysis_mode == "Pregunta específica"
-            and not additional_details.strip()
-        )
-    )
-)
-
-
-if analyze_button:
-
-    try:
-
-        client = OpenAI(
-            api_key=api_key
-        )
-
-        image_bytes = uploaded_file.getvalue()
-
-        base64_image = base64.b64encode(
-            image_bytes
-        ).decode("utf-8")
-
-        mime_type = uploaded_file.type
-
-        prompt_text = build_prompt(
-            analysis_mode,
-            additional_details
-        )
-
-        messages = [
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": prompt_text
-                    },
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": (
-                                f"data:{mime_type};base64,"
-                                f"{base64_image}"
-                            ),
-                            "detail": "high"
-                        }
-                    }
-                ]
-            }
-        ]
-
-        st.session_state.analysis_result = None
-
-        st.markdown("### 🧠 Resultado del análisis")
-
-        message_placeholder = st.empty()
-
-        full_response = ""
-
-        with st.spinner(
-            "La inteligencia artificial está interpretando la imagen..."
-        ):
-
-            stream = client.chat.completions.create(
-                model="gpt-4o",
-                messages=messages,
-                max_tokens=1600,
-                temperature=0.4,
-                stream=True
-            )
-
-            for completion in stream:
-
-                if not completion.choices:
-                    continue
-
-                delta = completion.choices[0].delta.content
-
-                if delta:
-                    full_response += delta
-
-                    message_placeholder.markdown(
-                        full_response + " ▌"
-                    )
-
-        message_placeholder.markdown(
-            full_response
-        )
-
-        st.session_state.analysis_result = full_response
-
-        st.session_state.last_prompt = prompt_text
-
-        st.success(
-            "¡Análisis visual completado correctamente!"
-        )
-
-    except AuthenticationError:
-
-        st.error(
-            "La clave API de OpenAI no es válida o ha sido revocada. "
-            "Revisa tu clave e inténtalo nuevamente."
-        )
-
-    except RateLimitError:
-
-        st.error(
-            "Se alcanzó un límite de uso o no hay crédito disponible. "
-            "Revisa la facturación de tu cuenta de OpenAI."
-        )
-
-    except APIConnectionError:
-
-        st.error(
-            "No fue posible conectar con OpenAI. "
-            "Comprueba tu conexión a internet."
-        )
-
-    except BadRequestError as error:
-
-        st.error(
-            "OpenAI no pudo procesar la solicitud. "
-            "Comprueba el formato, tamaño y contenido de la imagen."
-        )
-
-        st.caption(str(error))
-
-    except Exception as error:
-
-        st.error(
-            "Ocurrió un problema durante el análisis."
-        )
-
-        st.exception(error)
-
-
-# =========================================================
-# RESULTADO GUARDADO
-# =========================================================
-
-if (
-    st.session_state.analysis_result
-    and not analyze_button
-):
-
-    st.markdown("---")
-
-    st.markdown("## 📋 Último resultado")
-
-    st.markdown(
-        st.session_state.analysis_result
-    )
-
-
-# =========================================================
+    st.markdown("""
+    <div class="panel" style="text-align:center; padding:35px 20px;">
+        <div style="font-size:42px; margin-bottom:12px;">📷</div>
+        <h3>Tu imagen aparecerá aquí</h3>
+        <p style="color:#64748B; font-size:14px;">
+            Selecciona una fotografía para comenzar a hacer preguntas.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+# --------------------------------------------------
 # PIE DE PÁGINA
-# =========================================================
-
-st.markdown("---")
+# --------------------------------------------------
 
 st.markdown("""
-<div class="footer">
-
-    <div style="
-        color:#1556A8;
-        font-size:19px;
-        font-weight:800;
-        letter-spacing:1px;
-        margin-bottom:5px;
-    ">
-        VisioLab.
-    </div>
-
-    VISUAL INTELLIGENCE STUDIO
-
-    <div style="margin-top:8px;">
-        OBSERVAR · COMPRENDER · DESCUBRIR
-    </div>
-
+<div class="pie">
+    VisioLab · Análisis inteligente de imágenes
 </div>
 """, unsafe_allow_html=True)
